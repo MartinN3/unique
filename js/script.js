@@ -13,6 +13,7 @@
     //settings
     var defaultColumnsNumber = 8;
     var defaultRowsNumber = 5;
+    var totalImages = defaultRowsNumber * defaultColumnsNumber;
 
     var visibleColumns = {
         minimum: 0,
@@ -24,16 +25,32 @@
         maximum: 3
     };
 
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
 
 supportsProgress = progressElem &&
         // IE does not support progress
         progressElem.toString().indexOf('Unknown') === -1;
 
-    getInitContent(defaultRowsNumber, defaultColumnsNumber);
+    getInitContent();
 
     buttons.querySelectorAll('button').forEach(function(selector) {
         selector.addEventListener('click', modifyGrid);
     }, this);
+
+    function loopFunctions() {
+        if (height < container.clientHeight) {
+            Velocity(container, {
+                translateY: height - container.clientHeight +'px'
+            }, {
+                easing: "easeInOutBack",
+                loop: true,
+                /* Wait 10s before alternating back. */
+                delay: 5000
+            });
+        }
+    }
 
     function modifyGrid() {
         switch (this.id) {
@@ -46,7 +63,7 @@ supportsProgress = progressElem &&
                 break;
 
             case 'add':
-                getInitContent(defaultRowsNumber, defaultColumnsNumber);
+                getInitContent();
                 break;
 
             case 'reset':
@@ -60,17 +77,17 @@ supportsProgress = progressElem &&
 
     //--- actions
 
-    function getInitContent(defaultRowsNumber, defaultColumnsNumber) {
+    function getInitContent() {
         var fragment = document.createDocumentFragment();
-        var el;
 
-        for (var i = 0; i < defaultRowsNumber; i++) {
-            el = document.createElement('div');
-            el.appendChild(getItemsFragment(defaultColumnsNumber));
-            fragment.appendChild(el);
-        }
-
+        fragment.appendChild(getItemsFragment(totalImages));
         container.insertBefore(fragment, container.firstChild);
+        var msnry = new Masonry( container, {
+            itemSelector: '.grid-item',
+            columnWidth: Math.round(window.innerWidth / defaultColumnsNumber)
+
+        });
+
         var imgLoad = imagesLoaded(container);
         imgLoad.on('progress', onProgress);
         imgLoad.on('always', onAlways);
@@ -78,6 +95,8 @@ supportsProgress = progressElem &&
         imageCount = imgLoad.images.length;
         resetProgress();
         updateProgress(0);
+
+        loopFunctions();
     }
 
     function addX() {
@@ -151,15 +170,16 @@ supportsProgress = progressElem &&
 
     //---grid modification
 
-    function getItemsFragment(defaultColumnsNumber, itemsNumber) {
+    function getItemsFragment(itemsNumber) {
         var width = Math.round(window.innerWidth / defaultColumnsNumber);
         var height = Math.round(window.innerWidth / defaultColumnsNumber);
         var itemsFragment = document.createDocumentFragment();
-        if (typeof itemsNumber !== 'undefined') {
-            var defaultColumnsNumber = itemsNumber;
-        }
-        for (var i = 0; i < defaultColumnsNumber; i++) {
+
+        for (var i = 0; i < itemsNumber; i++) {
             var item = getImageItem(width, height);
+            item.classList.add('grid-item');
+            item.style.width=width+'px';
+            item.style.height=height+'px';
             itemsFragment.appendChild(item);
         }
         return itemsFragment;
@@ -202,7 +222,12 @@ supportsProgress = progressElem &&
     // triggered after each item is loaded
     function onProgress(imgLoad, image) {
         // change class if the image is loaded or broken
-        image.img.parentNode.className = image.isLoaded ? '' : 'is-broken';
+        if (image.isLoaded) {
+            image.img.parentNode.classList.remove('is-loading')
+        } else {
+            image.img.parentNode.classList.remove('is-loading')
+            image.img.parentNode.classList.add('is-broken')
+        }
         // update progress element
         loadedImageCount++;
         updateProgress(loadedImageCount);
