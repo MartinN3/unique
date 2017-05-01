@@ -14,29 +14,9 @@ progressElem = slideshow.querySelector('progress');
 var defaultColumnsNumber = 8;
 var defaultRowsNumber = 6;
 var totalImages = defaultRowsNumber * defaultColumnsNumber;
-
-var visibleColumns = {
-    minimum: 0,
-    maximum: defaultColumnsNumber - 1
-};
-
-
 var itemWidth = Math.floor(window.innerWidth / defaultColumnsNumber);
 var itemHeight = itemWidth;
-
-var gridMap = {
-
-}
-
-var imagesMap = {
-    'rows': {
-    },
-    'columns': {
-    }
-}
-
-var addedX = {};
-var addedY = {};
+var gridMap = {};
 var timeouts = [];
 
 supportsProgress = progressElem &&
@@ -50,8 +30,6 @@ buttons.querySelectorAll('button').forEach(function (selector) {
 }, this);
 
 function loopFunctions() {
-
-
     if (window.innerHeight < container.clientHeight) {
         Velocity(container, {
             translateY: window.innerHeight - container.clientHeight + 'px'
@@ -63,11 +41,23 @@ function loopFunctions() {
         });
     }
 
-    // timeoutLoop();
-
+    timeoutLoop();
     function timeoutLoop() {
-        addX();
-        addY()
+        if(Math.random() < 0.5) {
+            if(Math.random() < 0.5) {
+                addY('fromBottom');
+            } else {
+                addY('fromTop');
+            }
+        } else {
+            if(Math.random() < 0.5) {
+                addX('fromLeft');
+            } else {
+                addX('fromRight');
+            }
+        }
+
+
         timeouts.push(setTimeout(timeoutLoop, 2000));
     }
 
@@ -82,8 +72,12 @@ function modifyGrid() {
             addX('fromLeft');
             break;
 
-        case 'addY':
-            addY();
+        case 'addYfromBottom':
+            addY('fromBottom');
+            break;
+
+        case 'addYfromTop':
+            addY('fromTop');
             break;
 
         case 'add':
@@ -102,7 +96,6 @@ function modifyGrid() {
 //--- actions
 
 function getInitContent() {
-
     createGridMap();
 
     var fragment = document.createDocumentFragment();
@@ -110,82 +103,20 @@ function getInitContent() {
     container.insertBefore(fragment, container.firstChild);
 
     addImagesLoaded();
-
     loopFunctions();
 }
-
-// function addX() {
-//     if (container.hasChildNodes()) {
-//
-//         let rowNumber = randomRow();
-//         let row = getRowItems(rowNumber);
-//
-//         let lastGridItem = row.slice(-1)[0];
-//
-//         let newPositionX = document.getElementById(lastGridItem).offsetLeft + itemWidth;
-//         let newPositionY = document.getElementById(lastGridItem).offsetTop;
-//
-//         let image = getItemsFragment(1);
-//         let appendedImageId = 'grid-item-' + container.childNodes.length;
-//
-//         image.childNodes[0].id = appendedImageId
-//         image.childNodes[0].style.left = newPositionX + 'px';
-//         image.childNodes[0].style.top = newPositionY + 'px';
-//         image.childNodes[0].style.position = 'absolute';
-//
-//
-//         container.appendChild(image);
-//
-//         if (typeof addedX[rowNumber] == 'undefined') {
-//             addedX[rowNumber] = [];
-//         }
-//
-//         addedX[rowNumber].push(appendedImageId);
-//
-//         addedX[rowNumber].forEach(function (item) {
-//             row.push(item);
-//         });
-//
-//         function animateRow() {
-//             row.forEach(function (item) {
-//                 Velocity(document.getElementById(item), {
-//                     translateX: '+=-' + itemWidth + 'px'
-//                 }, {
-//                     easing: "easeInOutBack",
-//                 });
-//             });
-//         }
-//
-//         var imgLoad = imagesLoaded(container);
-//         imgLoad.on('progress', onProgress);
-//         imgLoad.on('always', animateRow);
-//         // reset progress counter
-//         imageCount = imgLoad.images.length;
-//         resetProgress();
-//         updateProgress(0);
-//
-//
-//     } else {
-//         getInitContent(defaultRowsNumber, defaultColumnsNumber);
-//         return;
-//     }
-//     ;
-// }
 
 function addX(direction) {
     let rowNumber = randomRow();
     let newPosition = (direction == 'fromRight') ? -1 : 1;
 
-    let row = [];
-
     let newItem = 'grid-item-' + (Object.keys(gridMap).length);
     let newItemId = Object.keys(gridMap).length;
 
+    let row = [];
     row.push(newItem);
 
     let defaultColumnsNumberMinus = defaultColumnsNumber - 1;
-
-    // getImageItem(Object.keys(gridMap));
 
     Object.keys(gridMap).forEach(function (gridItem, number) {
         if (gridMap[gridItem].y == rowNumber) {
@@ -219,48 +150,71 @@ function addX(direction) {
         }
     }
 
+    let setMultiplier = (direction == 'fromRight') ? 1 : -1;
     var fragment = document.createDocumentFragment();
-    fragment.appendChild(getItemsFragment(1, newItemId));
+    fragment.appendChild(getItemsFragment(1, newItemId, (setMultiplier * itemWidth)));
     container.insertBefore(fragment, container.firstChild);
 
-    animate(row, direction, itemWidth);
+
+    addImagesLoaded(function () {
+        animate(row, direction, itemWidth);
+    });
 }
 
-// function getDirection(direction) {
-//
-//     this.direction = direction;
-//
-//     let directionObject = {};
-//
-//     switch (this.direction) {
-//         case 'fromLeft':
-//             directionObject = {
-//                 translate: 'translateX',
-//                 multiplier: 1
-//             }
-//             break;
-//         case 'fromRight':
-//             directionObject = {
-//                 translate: 'translateX',
-//                 multiplier: -1
-//             }
-//             break;
-//         case 'fromTop':
-//             directionObject = {
-//                 translate: 'translateY',
-//                 multiplier: 1
-//             }
-//             break;
-//         case 'fromBottom':
-//             directionObject = {
-//                 translate: 'translateY',
-//                 multiplier: -1
-//             }
-//             break;
-//         }
-//
-//         return directionObject;
-// }
+function addY(direction) {
+    let columnNumber = randomColumn();
+    let newPosition = (direction == 'fromBottom') ? -1 : 1;
+
+    let newItem = 'grid-item-' + (Object.keys(gridMap).length);
+    let newItemId = Object.keys(gridMap).length;
+
+    let column = [];
+    column.push(newItem);
+
+    let defaultRowsNumberMinus = defaultRowsNumber - 1;
+
+    Object.keys(gridMap).forEach(function (gridItem, number) {
+        if (gridMap[gridItem].x == columnNumber) {
+
+            //Zjistim jestli jsem pridal ze spodu nebo z hora
+            if (newPosition == -1) {
+                //Zajimaji me obrazky nahoru od pridaneho z dola
+                if (gridMap[gridItem].y < defaultRowsNumberMinus + 1) {
+                    gridMap[gridItem].y = gridMap[gridItem].y - 1;
+                    column.push(gridItem);
+                }
+            } else {
+                //Nyni me zajimaji dolu od pridaneho zhora
+                if (gridMap[gridItem].y > -1) {
+                    gridMap[gridItem].y = gridMap[gridItem].y + 1;
+                    column.push(gridItem);
+                }
+            }
+        }
+    });
+
+    if (newPosition == -1) {
+        gridMap[newItem] = {
+            x: columnNumber,
+            y: defaultRowsNumberMinus
+        }
+    } else {
+        gridMap[newItem] = {
+            x: columnNumber,
+            y: 0
+        }
+    }
+
+    let setMultiplier = (direction == 'fromBottom') ? 1 : -1;
+    var fragment = document.createDocumentFragment();
+    fragment.appendChild(getItemsFragment(1, newItemId, false, (setMultiplier * itemHeight)));
+    container.insertBefore(fragment, container.firstChild);
+
+
+    addImagesLoaded(function () {
+        animate(column, direction, itemHeight);
+    });
+}
 
 function animate(array, direction, dimension) {
 
@@ -304,98 +258,6 @@ function animate(array, direction, dimension) {
     }
 }
 
-// function addY() {
-//     if (container.hasChildNodes()) {
-//
-//         let columnNumber = randomColumn();
-//         let column = getColumnItems(columnNumber);
-//
-//         let lastColumnItem = column.slice(-1)[0];
-//
-//         let newPositionX = document.getElementById(lastColumnItem).offsetLeft;
-//         let newPositionY = document.getElementById(lastColumnItem).offsetTop + itemHeight;
-//
-//         let image = getItemsFragment(1);
-//         let appendedImageId = 'grid-item-' + container.childNodes.length;
-//
-//         image.childNodes[0].id = appendedImageId
-//         image.childNodes[0].style.left = newPositionX + 'px';
-//         image.childNodes[0].style.top = newPositionY + 'px';
-//         image.childNodes[0].style.position = 'absolute';
-//
-//         container.appendChild(image);
-//
-//         if (typeof addedY[columnNumber] == 'undefined') {
-//             addedY[columnNumber] = [];
-//         }
-//
-//         addedY[columnNumber].push(appendedImageId);
-//
-//         addedY[columnNumber].forEach(function (item) {
-//             column.push(item);
-//         });
-//
-//         function animateColumn() {
-//             column.forEach(function (item) {
-//                 Velocity(document.getElementById(item), {
-//                     translateY: '+=-' + itemHeight + 'px'
-//                 }, {
-//                     easing: "easeInOutBack",
-//                 });
-//             });
-//         }
-//
-//         var imgLoad = imagesLoaded(container);
-//         imgLoad.on('progress', onProgress);
-//         imgLoad.on('always', animateColumn);
-//         // reset progress counter
-//         imageCount = imgLoad.images.length;
-//         resetProgress();
-//         updateProgress(0);
-//     } else {
-//         getInitContent(defaultRowsNumber, defaultColumnsNumber);
-//         return;
-//     }
-//     ;
-// }
-
-// function mapPosition() {
-//
-//     let coordinates = {
-//         'coordinatesX': getPosition(itemWidth, defaultColumnsNumber),
-//         'coordinatesY': getPosition(itemHeight, defaultRowsNumber)
-//     };
-//
-//     return coordinates;
-// }
-
-
-
-// function getColumnItems(columnNumber) {
-//     var getRandomColumn = typeof columnNumber !== 'undefined' ? columnNumber : randomColumn();
-//     let columnImages = [];
-//
-//     for (var currentRow = 0; currentRow < defaultRowsNumber; currentRow++) {
-//         let columnImage = container.childNodes[getRandomColumn + (defaultColumnsNumber * currentRow)].id;
-//         columnImages.push(columnImage);
-//     }
-//
-//     return columnImages;
-// }
-//
-// function getRowItems(rowNumber) {
-//     var getRandomRow = typeof rowNumber !== 'undefined' ? rowNumber : randomRow();
-//     let rowImages = [];
-//
-//     for (var currentColumn = 0; currentColumn < defaultColumnsNumber; currentColumn++) {
-//         let rowImage = container.childNodes[currentColumn + (defaultColumnsNumber * getRandomRow)].id;
-//         rowImages.push(rowImage);
-//     }
-//
-//     return rowImages;
-// }
-
-
 function empty(elem) {
     while (elem.firstChild) {
         elem.removeChild(elem.firstChild);
@@ -408,53 +270,6 @@ function empty(elem) {
     timeouts = [];
 }
 
-//---grid modification
-
-// function getItemsFragment(itemsNumber) {
-//     var itemsFragment = document.createDocumentFragment();
-//     let coordinates = mapPosition();
-//
-//     function addProperties(item, i, j, k) {
-//         item.classList.add('grid-item');
-//         item.id = 'grid-item-' + i;
-//         item.style.width = itemWidth + 'px';
-//         item.style.height = itemHeight + 'px';
-//         item.style.position = 'absolute';
-//         item.style.left = coordinates.coordinatesX[j] + 'px';
-//         item.style.top = coordinates.coordinatesY[k] + 'px';
-//     }
-//
-//     for (let i = 0, j = 0, k = 0; i < itemsNumber; i++, j++) {
-//         var item = getImageItem();
-//
-//         addProperties(item, i, j, k);
-//
-//
-//         if (j == defaultColumnsNumber) {
-//             j = 0;
-//             k++
-//         }
-//
-//         gridMap[item.id] = {
-//             x: j,
-//             y: k
-//         }
-//
-//
-//         if (typeof imagesMap.columns[j] == 'undefined') {
-//             imagesMap.columns[j] = [];
-//         }
-//         if (typeof imagesMap.rows[k] == 'undefined') {
-//             imagesMap.rows[k] = [];
-//         }
-//
-//         imagesMap.columns[j].push(item.id);
-//         imagesMap.rows[k].push(item.id);
-//
-//         itemsFragment.appendChild(item);
-//     }
-//     return itemsFragment;
-// }
 
 function createGridMap() {
     for (let i = 0, j = 0, k = 0; i < totalImages; i++, j++) {
@@ -473,14 +288,14 @@ function createGridMap() {
     }
 }
 
-function getItemsFragment(itemsNumber, countIdFrom) {
+function getItemsFragment(itemsNumber, countIdFrom, addedX = false, addedY = false) {
     var itemsFragment = document.createDocumentFragment();
 
     for (let i = 0; i < itemsNumber; i++) {
         var item = getImageItem();
         let itemId = 'grid-item-' + countIdFrom++;
 
-        addProperties(item, itemId, gridMap[itemId].x, gridMap[itemId].y);
+        addProperties(item, itemId, gridMap[itemId].x, gridMap[itemId].y, addedX, addedY);
 
         itemsFragment.appendChild(item);
     }
@@ -488,7 +303,7 @@ function getItemsFragment(itemsNumber, countIdFrom) {
     return itemsFragment;
 }
 
-function addProperties(item, id, axisX, axisY) {
+function addProperties(item, id, axisX, axisY, addedX, addedY) {
     item.classList.add('grid-item');
     item.id = id;
     item.style.width = itemWidth + 'px';
@@ -496,6 +311,14 @@ function addProperties(item, id, axisX, axisY) {
     item.style.position = 'absolute';
     item.style.left = axisX * itemWidth + 'px';
     item.style.top = axisY * itemHeight + 'px';
+
+    if (addedX) {
+        item.style.left = axisX * itemWidth + addedX + 'px';
+    }
+
+    if (addedY) {
+        item.style.top = axisY * itemHeight + addedY + 'px';
+    }
 }
 
 function getImageItem() {
@@ -511,17 +334,6 @@ function getImageItem() {
 
     item.appendChild(img);
     return item;
-}
-
-function getPosition(dimension, iterations) {
-
-    let position = [];
-
-    for (let i = 0; i < iterations; i++) {
-        position.push(dimension * i);
-    }
-
-    return position;
 }
 
 //---progress
@@ -557,10 +369,13 @@ function onProgress(imgLoad, image) {
     updateProgress(loadedImageCount);
 }
 
-function addImagesLoaded() {
+function addImagesLoaded(setDone) {
     var imgLoad = imagesLoaded(container);
     imgLoad.on('progress', onProgress);
     imgLoad.on('always', onAlways);
+    if (setDone) {
+        imgLoad.on('done', setDone);
+    }
     // reset progress counter
     imageCount = imgLoad.images.length;
     resetProgress();
