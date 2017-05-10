@@ -4,10 +4,15 @@ html, body{
 
 body {
   margin: 0;
+  font-family: 'Roboto';
 }
 
 .grid-item {
   overflow: hidden;
+
+  div {
+    display: none;
+  }
 }
 
 img {
@@ -19,11 +24,21 @@ header {
   height: 120px;
   line-height: 120px;
   text-align: center;
+  background-color: #fff;
+  box-shadow: 0px 0px 5px #828282;
+  position: relative;
 
-  background-color: #e8e8e8;
+  .headerWrapper {
+    display: inline-block;
+  }
 
   span {
-    font-size: 35px;
+    font-size: 65px;
+  }
+
+  img {
+    max-height: 100%;
+    float: left;
   }
 }
 
@@ -45,23 +60,51 @@ header {
 }
 
 .controls,
-.show-detail {
+.show-detail,
+header {
   //Possible Z-index animations in future for items that will be over top
   z-index: 100000;
 }
 
 .show-detail {
-  //width: 100% !important;
-  //height: 100% !important;
-  //left: 0 !important;
-  //top: 0 !important;
-  //transform: none !important;
-  background-color: #000;
+  background-color: rgba(0, 0, 0, 0.8);;
 
   img {
+    float: left;
     width: 50%;
     padding: 120px;
     box-sizing: border-box;
     max-width: none;
+  }
+
+  div {
+    float: left;
+    display: block;
+    width: 50%;
+    height: 100%;
+    padding: 120px;
+    box-sizing: border-box;
+    color: #fff;
+    font-size: 1.3em;
+    font-weight: 600;
+
+    span {
+      display: block;
+    }
+
+    .userName {
+      font-size: 1em;
+      margin-bottom: 10px;
+    }
+
+    .userThanks {
+      font-size: 0.8em;
+
+    }
+
+    .userHashtags {
+      margin-top: 20px;
+      font-size: inherit;
+    }
   }
 }

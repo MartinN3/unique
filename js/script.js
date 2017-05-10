@@ -2,7 +2,6 @@
 'use strict';
 
 var slideshow = document.querySelector('body');
-var header = slideshow.querySelector('header');
 var container = slideshow.querySelector('#images-container');
 var buttons = slideshow.querySelector('#buttons');
 var supportsProgress;
@@ -12,14 +11,16 @@ statusElem = slideshow.querySelector('#status');
 progressElem = slideshow.querySelector('progress');
 
 //settings
-var defaultColumnsNumber = 8;
-var defaultRowsNumber = 4;
-var totalImages = defaultRowsNumber * defaultColumnsNumber;
-var itemWidth = Math.floor(window.innerWidth / defaultColumnsNumber);
-var itemHeight = itemWidth;
-var gridMap = {};
-var timeouts = [];
-var imagesInFolderCount = 0;
+const defaultColumnsNumber = 8;
+const defaultRowsNumber = 4;
+const totalGridImages = defaultRowsNumber * defaultColumnsNumber;
+const itemWidth = Math.floor(window.innerWidth / defaultColumnsNumber);
+const itemHeight = itemWidth;
+const gridMap = {};
+const timeouts = [];
+
+const imagesMagazine = [];
+const usedImagesMagazine = [];
 
 supportsProgress = progressElem &&
     // IE does not support progress
@@ -69,6 +70,20 @@ function loopFunctions() {
     }
 }
 
+//load all available images from source json to magazine
+function loadMagazine() {
+    loadJSON("/slideshow_images_info.json", function(response) {
+        let parsedJSON = JSON.parse(response);
+
+        parsedJSON.list.forEach(function (item) {
+           imagesMagazine.push(item);
+        });
+
+        appendToContainer(totalGridImages, 0);
+        loopFunctions();
+    });
+}
+
 function modifyGrid() {
     switch (this.id) {
         case 'addXfromRight':
@@ -106,31 +121,24 @@ function modifyGrid() {
 //--- actions
 
 function getInitContent() {
+    loadMagazine();
     createGridMap();
-
-    loadJSON("slideshow_images_info.json", function(response) {
-        var actual_JSON = JSON.parse(response);
-        imagesInFolderCount = actual_JSON.count;
-    });
 
     container.style.width = defaultColumnsNumber * itemWidth + 'px';
     container.style.height = defaultRowsNumber * itemHeight + 'px';
+}
 
+function appendToContainer(numberOfImages) {
     var fragment = document.createDocumentFragment();
-    fragment.appendChild(getItemsFragment(totalImages, 0));
+    fragment.appendChild(getItemsFragment(numberOfImages, 0));
     container.insertBefore(fragment, container.firstChild);
 
     addImagesLoaded();
-    loopFunctions();
-}
-
-function getImageInFolderIndex() {
-    return randomIntFromInterval(0, imagesInFolderCount);
 }
 
 function addX(direction, rowNumberPushed) {
     if (container.hasChildNodes()) {
-        let rowNumber = (typeof rowNumberPushed == undefined) ? randomRow() : rowNumberPushed;
+        let rowNumber = (rowNumberPushed === undefined) ? randomRow() : rowNumberPushed;
         let newPosition = (direction == 'fromRight') ? -1 : 1;
 
         let newItem = 'grid-item-' + (Object.keys(gridMap).length);
@@ -189,7 +197,7 @@ function addX(direction, rowNumberPushed) {
 
 function addY(direction, columnNumberPushed) {
     if (container.hasChildNodes()) {
-        let columnNumber = (typeof columnNumberPushed == undefined) ? randomRow() : columnNumberPushed;
+        let columnNumber = (columnNumberPushed === undefined) ? randomRow() : columnNumberPushed;
         let newPosition = (direction == 'fromBottom') ? -1 : 1;
 
         let newItem = 'grid-item-' + (Object.keys(gridMap).length);
@@ -306,12 +314,12 @@ function clearTimeouts() {
         clearTimeout(timeouts[i]);
     }
     //quick reset of the timer array you just cleared
-    timeouts = [];
+    timeouts.length = 0;
 }
 
 
 function createGridMap() {
-    for (let i = 0, j = 0, k = 0; i < totalImages; i++, j++) {
+    for (let i = 0, j = 0, k = 0; i < totalGridImages; i++, j++) {
 
         let itemId = 'grid-item-' + i;
 
@@ -327,12 +335,12 @@ function createGridMap() {
     }
 }
 
-function getItemsFragment(itemsNumber, countIdFrom, addedX = false, addedY = false) {
-    var itemsFragment = document.createDocumentFragment();
+function getItemsFragment(itemsNumber, countFromId, addedX = false, addedY = false) {
+    let itemsFragment = document.createDocumentFragment();
 
     for (let i = 0; i < itemsNumber; i++) {
-        var item = getImageItem(getImageInFolderIndex());
-        let itemId = 'grid-item-' + countIdFrom++;
+        let item = getImageItem();
+        let itemId = 'grid-item-' + countFromId++;
 
         addProperties(item, itemId, gridMap[itemId].x, gridMap[itemId].y, addedX, addedY);
 
@@ -340,20 +348,6 @@ function getItemsFragment(itemsNumber, countIdFrom, addedX = false, addedY = fal
     }
 
     return itemsFragment;
-}
-
-function loadJSON(file, callback) {
-
-    var xobj = new XMLHttpRequest();
-    xobj.overrideMimeType("application/json");
-    xobj.open('GET', file, true); // Replace 'my_data' with the path to your file
-    xobj.onreadystatechange = function () {
-        if (xobj.readyState == 4 && xobj.status == "200") {
-            // Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
-            callback(xobj.responseText);
-        }
-    };
-    xobj.send(null);
 }
 
 function addProperties(item, id, axisX, axisY, addedX, addedY) {
@@ -374,20 +368,42 @@ function addProperties(item, id, axisX, axisY, addedX, addedY) {
     }
 }
 
-function getImageItem(id) {
-    var item = document.createElement('div');
-    item.className = 'is-loading';
-    var img = document.createElement('img');
+function getImageItem() {
+    let item = document.createElement('div');
+    let img = document.createElement('img');
+    let textWrapper = document.createElement('div');
 
-    // var rando = Math.ceil(Math.random() * 100);
-    // random parameter to prevent cached images
+    let currentId;
+    let imageFromMagazine;
+
+    if (imagesMagazine.length == 0) {
+        usedImagesMagazine.forEach(function (item) {
+            imagesMagazine.push(item);
+        });
+        usedImagesMagazine.length = 0;
+        //TODO pozdrz loop o 10 minut
+    }
+
+    currentId =  imagesMagazine.length - 1;
+
+    imageFromMagazine = imagesMagazine.pop();
+    usedImagesMagazine.push(imageFromMagazine);
+
+    item.classList.add('is-loading');
     img.src =
         // use lorempixel for great random images
         // 'http://loremflickr.com/' + itemWidth + '/' + itemHeight + '/' + '?' + rando;
         // 'http://loremflickr.com/' + itemWidth + '/' + itemHeight + '/';
-        'http://195.113.232.52:5000/nekofeed/feed/slideshow_indexed_image?index='+ id;
+        '/images/'+ currentId +'.jpg';
+
+    console.log(currentId);
+    textWrapper.innerHTML =
+        '<span class="userName">'+ imageFromMagazine.texts.user_name +'</span>' +
+        '<span class="userThanks">'+ imageFromMagazine.texts.full_name +'</span>' +
+        '<span class="userHashtags">'+ imageFromMagazine.texts.caption +'</span>';
 
     item.appendChild(img);
+    item.appendChild(textWrapper);
     return item;
 }
 //---progress
@@ -503,5 +519,18 @@ function isEven(n) {
 
 function isOdd(n) {
     return Math.abs(n % 2) == 1;
+}
+
+function loadJSON(file, callback) {
+    var xobj = new XMLHttpRequest();
+    xobj.overrideMimeType("application/json");
+    xobj.open('GET', file, true); // Replace 'my_data' with the path to your file
+    xobj.onreadystatechange = function () {
+        if (xobj.readyState == 4 && xobj.status == "200") {
+            // Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
+            callback(xobj.responseText);
+        }
+    };
+    xobj.send(null);
 }
 // })();
