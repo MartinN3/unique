@@ -37,18 +37,6 @@ buttons.querySelectorAll('button').forEach(function (selector) {
     selector.addEventListener('click', modifyGrid);
 });
 
-function loopFunctions() {
-    for (let i = 0; i < defaultRowsNumber; i++) {
-        timeouts.push(setTimeout(function () {
-            if(isOdd(i)) {
-                addX('-', i);
-            } else {
-                addX('+', i);
-            }
-        }, 2000 * i));
-    }
-}
-
 var loopFunctions = {
     init: function () {
         this.handleAnimations();
