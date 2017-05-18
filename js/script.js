@@ -19,11 +19,13 @@ const itemHeight = Math.floor(window.innerWidth / defaultColumnsNumber);
 const gridMap = {};
 const timeouts = [];
 let idGlobalCounter = 0;
+let eventCounters = {};
 
 const imagesMagazine = [];
 const usedImagesMagazine = [];
 const adsMagazine = [];
 const usedAdsMagazine = [];
+let options = {};
 
 supportsProgress = progressElem &&
     // IE does not support progress
@@ -53,8 +55,38 @@ var loopFunctions = {
     },
     handleAnimations: function () {
         window.addEventListener('addX', function (e) {
-            console.log('printer state changed', e.detail);
-        });
+            console.log(e.detail.rowNumber);
+            e.detail.rowNumber++;
+            e.detail.signPlusOrMinus === '+' ? e.detail.signPlusOrMinus = '-' : e.detail.signPlusOrMinus = '+';
+            if (e.detail.rowNumber === defaultRowsNumber) {
+                eventCounters.addX = 0;
+                timeouts.push(setTimeout(function () {
+                    this.animateGrow();
+                }.bind(this), options.slideshow_maximum_speed * 100));
+
+            } else {
+                eventCounters.addX =+ 1;
+                this.timeBetweenGalleryLoop(e.detail.signPlusOrMinus, e.detail.rowNumber);
+            }
+        }.bind(this));
+
+        window.addEventListener('animateGrow', function (e) {
+            eventCounters.animateGrow += 1;
+
+            if (eventCounters.animateGrow === 3) {
+                eventCounters.animateGrow = 0;
+                this.animateAdd();
+            } else {
+                this.timeBetweenGalleryLoop('+', 0);
+            }
+        }.bind(this));
+
+        window.addEventListener('animateAd', function (e) {
+                this.timeBetweenGalleryLoop('+', 0);
+        }.bind(this));
+
+        eventCounters.animateGrow = 0;
+        this.addX('+', 0);
     },
     animateGrow: function() {
         cleanGrid();
@@ -76,11 +108,30 @@ var loopFunctions = {
         });
 
         Velocity(itemAnimated, 'reverse', {
-            delay: '8000',
+            delay: options.slideshow_ad_duration * 100,
             complete: function () {
                 itemAnimated.classList.remove('show-detail');
+                let evt = new CustomEvent('animateGrow', { detail: itemAnimated });
+                window.dispatchEvent(evt);
             }
         });
+    },
+    timeBetweenGalleryLoop: function (direction, sign) {
+        if (imagesMagazine.length === 0) {
+            usedImagesMagazine.forEach(function (item) {
+                imagesMagazine.push(item);
+            });
+            imagesMagazine.reverse();
+            usedImagesMagazine.length = 0;
+
+            timeouts.push(setTimeout(function () {
+                this.addX(direction, sign);
+            }.bind(this), options.slideshow_time_between_gallery_loop * 100));
+        } else {
+            timeouts.push(setTimeout(function () {
+                this.addX(direction, sign);
+            }.bind(this), options.slideshow_maximum_speed * 100));
+        }
     },
     addX: function(dir, number) {
         if (container.hasChildNodes()) {
@@ -89,6 +140,8 @@ var loopFunctions = {
                 signPlusOrMinus: dir,
                 rowNumber: number
             });
+
+            console.log(constructInformation);
 
             //TODO Unite fill grid with images to some function
 
@@ -107,12 +160,13 @@ var loopFunctions = {
                     }, {
                         easing: "easeInOutBack",
                         complete: function () {
-                                let evt = new CustomEvent('addX', { detail: dir });
-                                window.dispatchEvent(evt);
                         }
                     });
                 });
             }.bind(this));
+
+            let evt = new CustomEvent('addX', { detail: constructInformation });
+            window.dispatchEvent(evt);
         } else {
             getInitContent();
         }
@@ -134,6 +188,8 @@ var loopFunctions = {
                 while (adsContainer.firstChild) {
                     adsContainer.removeChild(adsContainer.firstChild);
                 }
+                let evt = new CustomEvent('animateAd');
+                window.dispatchEvent(evt);
             }
         });
     },
@@ -210,11 +266,13 @@ function getInitContent() {
                     adsMagazine.push(item);
                 });
 
+                options = parsedJSON.options;
+
                 //TODO Unite fill grid with images to some function
                 let fragment = document.createDocumentFragment();
 
                 Object.keys(gridMap).forEach(function (gridItem) {
-                    let item = getImageItem();
+                    let item = getImageItem(true);
                     addProperties(item, gridItem, gridMap[gridItem].x, gridMap[gridItem].y);
                     fragment.appendChild(item);
                 });
@@ -248,13 +306,13 @@ function addToGridMap(positionAxisX, positionAxisY) {
 
 function PushGridMapFromDirection(opts) {
     opts = extend({
-        rowNumber: opts.y === undefined ? randomRow() : opts.y,
+        rowNumber: opts.rowNumber === undefined ? (opts.y === undefined ? randomRow() : opts.y) : opts.rowNumber,
         columnNumber: opts.x === undefined ? randomColumn() : opts.x,
-        signPlusOrMinus: Math.round(Math.random()) ? '+' : '-',
+        signPlusOrMinus: opts.signPlusOrMinus === undefined ? (Math.round(Math.random()) ? '+' : '-') : opts.signPlusOrMinus,
         axisToPush: Math.round(Math.random()) ? 'x' : 'y'
     }, opts);
     opts = extend({
-        x: opts.axisToPush === 'x' ? (opts.signPlusOrMinus === '+' ? 0 : defaultColumnsNumber - 1) : opts.columnNumber,
+        x: opts.axisToPush === 'x' ? (opts.signPlusOrMinus === '+' ? defaultColumnsNumber - 1 : 0) : opts.columnNumber,
         y: opts.axisToPush === 'y' ? (opts.signPlusOrMinus === '+' ? 0 : defaultRowsNumber - 1) : opts.rowNumber,
     }, opts);
     opts = extend({
@@ -270,14 +328,14 @@ function PushGridMapFromDirection(opts) {
 
         Object.keys(gridMap).forEach(function (gridItem) {
             if (opts.axisToPush === 'x') {
-                if (opts.signPlusOrMinus === '-') {
+                if (opts.signPlusOrMinus === '+') {
                     if (gridMap[gridItem].x <= opts.x && gridMap[gridItem].y === opts.y) {
 
                         gridItemsToPush.push(gridItem);
                         gridMap[gridItem].x = gridMap[gridItem].x - 1;
 
                     }
-                } else if (opts.signPlusOrMinus === '+') {
+                } else if (opts.signPlusOrMinus === '-') {
                     if (gridMap[gridItem].x >= opts.x && gridMap[gridItem].y === opts.y) {
 
                         gridItemsToPush.push(gridItem);
@@ -348,6 +406,8 @@ function cleanGrid() {
         }
     });
 
+    console.log(cleanItems);
+
     cleanItems.forEach(function (item) {
         delete gridMap[item];
         container.removeChild(document.getElementById(item));
@@ -366,7 +426,7 @@ function addProperties(item, itemId, axisX, axisY, addedX, addedY) {
     item.style.top = axisY * itemHeight + 'px';
 
     if (addedX) {
-        item.style.left = axisX * itemWidth + (addedX * -1)  + 'px';
+        item.style.left = axisX * itemWidth + addedX  + 'px';
     }
 
     if (addedY) {
@@ -417,7 +477,7 @@ function getVideoItem(url) {
     return video;
 }
 
-function getImageItem() {
+function getImageItem(init) {
     let item = document.createElement('div');
 
     let img = document.createElement('img');
@@ -426,18 +486,15 @@ function getImageItem() {
     let textWrapper = document.createElement('div');
     item.appendChild(textWrapper);
 
-    let imageFromMagazine;
-
-    if (imagesMagazine.length == 0) {
+    if (imagesMagazine.length === 0 && init === true) {
         usedImagesMagazine.forEach(function (item) {
             imagesMagazine.push(item);
         });
         imagesMagazine.reverse();
         usedImagesMagazine.length = 0;
-        //TODO pozdrz loop o 10 minut
     }
 
-    imageFromMagazine = imagesMagazine.pop();
+    let imageFromMagazine = imagesMagazine.pop();
     usedImagesMagazine.push(imageFromMagazine);
 
     item.classList.add('is-loading');
