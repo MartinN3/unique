@@ -10,8 +10,21 @@ body {
 .grid-item {
   overflow: hidden;
 
-  div {
+  .textWrapper {
     display: none;
+  }
+
+  img {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &.show-detail {
+    img {
+      position: static;
+      transform: none;
+    }
   }
 }
 
@@ -21,8 +34,8 @@ img {
 }
 
 header {
-  height: 120px;
-  line-height: 120px;
+  height: 6.3vw;
+  line-height: 6.3vw;
   text-align: center;
   background-color: #fff;
   box-shadow: 0px 0px 5px #828282;
@@ -37,7 +50,7 @@ header {
   }
 
   img {
-    max-height: 100%;
+    height: 6.3vw;
     float: left;
   }
 }
@@ -73,20 +86,35 @@ header {
 .show-detail {
   background-color: rgba(0, 0, 0, 0.8);;
 
-  img {
+  .imgWrapper {
+    overflow: hidden;
     float: left;
-    width: 50%;
-    padding: 120px;
+    display: block;
+    margin: 100px;
+    width: calc(50% - 200px);
+    height: calc(100% - 200px);
     box-sizing: border-box;
-    max-width: none;
+    position: relative;
+
+    img {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      float: left;
+      width: 100%;
+      height: auto;
+      box-sizing: border-box;
+    }
   }
 
-  div {
+
+  .textWrapper {
     float: left;
     display: block;
     width: 50%;
     height: 100%;
-    padding: 120px;
+    padding: 10vw 60px 10vw 0;
     box-sizing: border-box;
     color: #fff;
     font-size: 1.3em;
@@ -99,10 +127,13 @@ header {
     .userName {
       font-size: 1em;
       margin-bottom: 10px;
+
+      //hide
+      display: none;
     }
 
     .userThanks {
-      font-size: 0.8em;
+      font-size: 1.2em;
 
     }
 

@@ -1,10 +1,6 @@
 // (function () {
 'use strict';
 
-var Velocity = require('velocity-animate');
-var imagesLoaded = require('imagesloaded');
-var shuffle = require('lodash.shuffle');
-
 const slideshow = document.querySelector('body');
 const container = slideshow.querySelector('#images-container');
 const adContainer = slideshow.querySelector('#ads-container');
@@ -46,11 +42,7 @@ var loopFunctions = {
             console.log(e.detail.rowNumber);
 
             e.detail.rowNumber++;
-            if (e.detail.signPlusOrMinus === '+') {
-                e.detail.signPlusOrMinus = '-';
-            } else {
-                e.detail.signPlusOrMinus = '+';
-            }
+            e.detail.signPlusOrMinus === '+' ? e.detail.signPlusOrMinus = '-' : e.detail.signPlusOrMinus = '+';
             if (e.detail.rowNumber === defaultRowsNumber) {
                 eventCounters.addX = 0;
                 timeouts.push(setTimeout(function () {
@@ -75,7 +67,7 @@ var loopFunctions = {
         }.bind(this));
 
         window.addEventListener('animateAd', function (e) {
-                this.timeBetweenGalleryLoop('+', 0);
+            this.timeBetweenGalleryLoop('+', 0);
         }.bind(this));
 
         eventCounters.animateGrow = 0;
@@ -88,7 +80,7 @@ var loopFunctions = {
 
         Velocity(itemAnimated, {
             width: container.clientWidth + 'px',
-            height: container.clientWidth + 'px',
+            height: 100 + '%',
             left: 0,
             top: 0,
             translateX: 0,
@@ -102,7 +94,7 @@ var loopFunctions = {
         });
 
         Velocity(itemAnimated, 'reverse', {
-            delay: options.slideshow_ad_duration * 100,
+            delay: options.slideshow_ad_duration * 1000,
             complete: function () {
                 itemAnimated.classList.remove('show-detail');
                 let evt = new CustomEvent('animateGrow', { detail: itemAnimated });
@@ -120,7 +112,7 @@ var loopFunctions = {
 
             timeouts.push(setTimeout(function () {
                 this.addX(direction, sign);
-            }.bind(this), options.slideshow_time_between_gallery_loop * 100));
+            }.bind(this), options.slideshow_time_between_gallery_loop * 1000));
         } else {
             timeouts.push(setTimeout(function () {
                 this.addX(direction, sign);
@@ -222,18 +214,18 @@ function getInitContent() {
 
         //load all available images from source json to magazine
         (function loadMagazine() {
-            loadJSON("/demoData/slideshow_images_info.json", function(response) {
+            loadJSON("/nekofeed/feed/slideshow_images_info", function(response) {
                 let parsedJSON = JSON.parse(response);
 
                 parsedJSON.list.forEach(function (item) {
                     imagesMagazine.push(item);
                 });
 
-                parsedJSON.adList.forEach(function (item) {
+                parsedJSON.ads.forEach(function (item) {
                     adsMagazine.push(item);
                 });
 
-                options = parsedJSON.options;
+                options = parsedJSON;
 
                 //TODO Unite fill grid with images to some function
                 let fragment = document.createDocumentFragment();
@@ -446,14 +438,17 @@ function getVideoItem(url) {
 
 function getImageItem(init) {
     let item = document.createElement('div');
-
+    let imgWrapper = document.createElement('div');
+    imgWrapper.classList.add('imgWrapper');
     let img = document.createElement('img');
-    item.appendChild(img);
+    imgWrapper.appendChild(img);
+    item.appendChild(imgWrapper);
 
     let textWrapper = document.createElement('div');
+    textWrapper.classList.add('textWrapper');
     item.appendChild(textWrapper);
 
-    if (imagesMagazine.length === 0 && init === true) {
+    if (imagesMagazine.length === 1 && init === true) {
         usedImagesMagazine.forEach(function (item) {
             imagesMagazine.push(item);
         });

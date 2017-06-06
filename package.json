@@ -12,11 +12,25 @@
     "browser-sync": "^2.18.8",
     "gulp": "^3.9.1",
     "gulp-autoprefixer": "^3.1.1",
-    "gulp-sass": "^3.1.0"
+    "gulp-sass": "^3.1.0",
+    "gulp-browserify": "^0.5.0",
+    "browserify-shim": "^3.8.0",
+    "browserify": "^6.3.4",
+    "gulp-uglify": "^1.0.1",
+    "gulp-rename": "^1.2.0",
+    "gulp-jshint": "^1.9.0"
   },
   "dependencies": {
     "imagesloaded": "^4.1.1",
-    "masonry-layout": "^4.2.0",
+    "lodash.shuffle": "^4.2.0",
     "velocity-animate": "^1.5.0"
+  },
+  "browserify-shim": {
+    "jquery": "$"
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim"
+    ]
   }
 }
