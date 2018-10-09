@@ -329,7 +329,7 @@ function getImageItem() {
     // random parameter to prevent cached images
     img.src =
         // use lorempixel for great random images
-        'http://lorempixel.com/' + itemWidth + '/' + itemHeight + '/' + '?' + rando;
+        'https://loremflickr.com/' + itemWidth + '/' + itemHeight + '/' + '?' + rando;
         // 'http://lorempixel.com/' + itemWidth + '/' + itemHeight + '/';
 
     item.appendChild(img);
